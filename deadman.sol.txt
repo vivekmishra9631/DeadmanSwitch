@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract deadmanSwitch{
+    address public owner;
+    address public presentAddress;
+    uint public lastActiveBlock;
+
+    event EtherReceived(address indexed from, uint256 amount);
+
+    constructor (address _presentAddress){
+        owner= msg.sender;
+        presentAddress = _presentAddress;
+        lastActiveBlock = block.number;
+    }
+
+    modifier onlyOwner(){
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    function still_alive() external onlyOwner{
+         lastActiveBlock= block.number ;
+    }
+
+    function checkInactivity() public view returns(bool){
+       return block.number > lastActiveBlock + 10;
+    }
+
+    function transferFunds() public onlyOwner{
+        require(checkInactivity(), "owner is still active");
+        uint balance= address(this).balance;
+        payable(presentAddress).transfer(balance);
+    }
+
+    receive() external payable {
+        emit EtherReceived(msg.sender, msg.value);
+    }
+
+}
